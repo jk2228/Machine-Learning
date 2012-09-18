@@ -57,7 +57,7 @@ def loadTrainingData():
 
         for i in range(0, 10):
             if i not in stat:
-                stat[i] = -1 * sys.minint
+                stat[i] = -1 * sys.maxint
         data.append(DataPoint(loc, stat))
 
     return data

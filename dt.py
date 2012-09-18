@@ -12,12 +12,12 @@ class DataPoint:
         return '\n' + str(self.stations) + '   ' + self.location
 
 class Node:
-    def __init__(self, left, right, dataPoints, attribute, value):
+    def __init__(self, left, right, dataPoints, attr=None, value=None):
         self.left = left
         self.right = right
-        self.dataPoints = dataPoints
-        self.attr = attribute
+        self.attr = attr
         self.value = value
+        self.dataPoints = dataPoints
         
         locSums = {}
 
@@ -28,6 +28,8 @@ class Node:
 
         self.locSums = locSums
         self.entropy = getEntropy(locSums.values())
+    def __repr__(self):
+        return "Attribute: "+str(self.attr)+", Value: "+str(self.value)+" Entropy: "+str(self.entropy)
 
 #Load training data
 
@@ -45,6 +47,7 @@ def loadTrainingData():
             for s in subdivision:
                 if s != "":
                     allTokens.append(s)
+                    
         i = 0
         loc = ""
         stat = {}
@@ -54,7 +57,7 @@ def loadTrainingData():
             elif i % 2 == 1: # if odd
                 stat[int(allTokens[i-1])] = int(allTokens[i])
             i += 1
-
+        
         for i in range(0, 10):
             if i not in stat:
                 stat[i] = -1 * sys.maxint
@@ -79,7 +82,6 @@ def getEntropy(numbers):
 
 def getAttributeLists(dataList):
     splitsForAttributes = {}
-
     for point in dataList:
         for station in point.stations:
             if station not in splitsForAttributes:
@@ -93,36 +95,32 @@ def getAttributeLists(dataList):
 
 def getSplits(attributeLists):
     splits = {}
+    
     for attr in attributeLists:
         splitList = []
         prev = attributeLists[attr][0]
         
-        print attributeLists[attr]
         for pair in attributeLists[attr]:
             value, loc = pair
             pValue, pLoc = prev
             if loc != pLoc:
-                print value
                 splitList.append((value + pValue) / float(2))
             prev = pair
-        splits[attr] = list(set(splitList))
+        splits[attr] = sorted(list(set(splitList)))
 
     return splits
 
-def splitNode(node):
+def splitNode(node, attr, value):
     lPoints = []
     rPoints = []
-    rPoints = filter(lambda x: (x.stations[node.attr] >= node.value), node.dataPoints)
-    lPoints = filter(lambda x: (x.stations[node.attr] < node.value), node.dataPoints)
+    rPoints = filter(lambda x: (x.stations[attr] >= value), node.dataPoints)
+    lPoints = filter(lambda x: (x.stations[attr] < value), node.dataPoints)
     
-    lChild = Node(None, None, lPoints, None, None)
-    rChild = Node(None, None, rPoints, None, None)
-
-    node.left = lChild
-    node.right = rChild
-
-    return node
-
+    lChild = Node(None, None, lPoints)
+    rChild = Node(None, None, rPoints)
+    
+    return Node(lChild, rChild, node.dataPoints)
+	
 def getChildrenEntropy(rootNode):
     # Return weighted sum of children entropies
     r = rootNode.right.entropy * (float(len(rootNode.right.dataPoints)) / len(rootNode.dataPoints))
@@ -130,12 +128,29 @@ def getChildrenEntropy(rootNode):
     
     return r + l
 
-   
-
+def getBestSplit(node, splits, previousInfo):
+    best_infoGain = -1 * sys.maxint
+    best_splitNode = None
+    for split_attr in splits:
+        for split_value in splits[split_attr]:
+            testSplit = splitNode(node, split_attr, split_value)
+            testSplit.attr = split_attr
+            testSplit.value = split_value
+            info = getChildrenEntropy(testSplit)
+            #sys.stdout.write(str(split_value)+",")
+            if (previousInfo - info) > best_infoGain:
+                best_infoGain = (previousInfo - info)
+                best_splitNode = testSplit
+                #print str(info - previousInfo) + "     " + str(testSplit)
+    return best_splitNode
 
 dataPoints = loadTrainingData()
-node = Node(None, None, dataPoints, 0, -80)
+
+node = Node(None, None, dataPoints)
 print node.locSums
 print node.entropy
 
-print getChildrenEntropy(splitNode(node))
+splits = getSplits(getAttributeLists(dataPoints))
+
+split = getBestSplit(node, splits, node.entropy)
+print split
