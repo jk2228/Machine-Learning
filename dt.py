@@ -12,12 +12,13 @@ class DataPoint:
         return '\n' + str(self.stations) + '   ' + self.location
 
 class Node:
-    def __init__(self, left, right, dataPoints, attr=None, value=None):
+    def __init__(self, left, right, dataPoints, attr=None, value=None, label=None):
         self.left = left
         self.right = right
         self.attr = attr
         self.value = value
         self.dataPoints = dataPoints
+        self.label = label # Only leaf nodes have labels
         
         locSums = {}
 
@@ -35,6 +36,9 @@ class Node:
 
 def loadTrainingData():
     f = open('wifi.train', 'ru')
+    
+    #used to remove duplicates
+    duplicateSet = {}
          
     lines = f.readlines()
     data = []
@@ -61,6 +65,12 @@ def loadTrainingData():
         for i in range(0, 10):
             if i not in stat:
                 stat[i] = -1 * sys.maxint
+                
+        if frozenset(stat.items()) not in duplicateSet:
+            duplicateSet[frozenset(stat.items())] = 1
+        else:
+            continue
+        
         data.append(DataPoint(loc, stat))
 
     return data
@@ -128,9 +138,12 @@ def getChildrenEntropy(rootNode):
     
     return r + l
 
-def getBestSplit(node, splits, previousInfo):
+def getBestSplit(node, splits=None):
+    if splits == None:
+        splits = getSplits(getAttributeLists(node.dataPoints))
     best_infoGain = -1 * sys.maxint
     best_splitNode = None
+    previousInfo = node.entropy
     for split_attr in splits:
         for split_value in splits[split_attr]:
             testSplit = splitNode(node, split_attr, split_value)
@@ -142,15 +155,82 @@ def getBestSplit(node, splits, previousInfo):
                 best_infoGain = (previousInfo - info)
                 best_splitNode = testSplit
                 #print str(info - previousInfo) + "     " + str(testSplit)
+    if best_splitNode.left.dataPoints == [] or best_splitNode.right.dataPoints == []:
+        print "0 size"
+        print best_splitNode.dataPoints
     return best_splitNode
+    
+    
+''' Actually build the tree '''
+def buildTree(dataPoints):
+    homogenous = True
+    loc = dataPoints[0].location
+    for p in dataPoints:
+        if p.location != loc:
+            homogenous = False
+            break
+    if homogenous:
+        return Node(None, None, dataPoints, label=loc)
+    
+    rootNode = Node(None, None, dataPoints)
+    rootNode = getBestSplit(rootNode)
+    rootNode.left = buildTree(rootNode.left.dataPoints)
+    rootNode.right = buildTree(rootNode.right.dataPoints)
 
+    return rootNode
+    
+def classifyPoint(tree, point):
+    if tree.label != None:
+        return tree.label
+    
+    if point.stations[tree.attr] >= tree.value:
+        return classifyPoint(tree.right, point)
+    else:
+        return classifyPoint(tree.left, point)
+        
+def classifyDataSet(tree, dataset):
+    total = 0
+    incorrectTags = {}
+    totalTags = {}
+    
+    i = 0
+    for p in dataset:
+        real = p.location
+        tag = classifyPoint(tree, p)
+        
+        if real not in totalTags:
+            totalTags[real] = 0
+        totalTags[real] += 1
+        
+        
+        
+        if real != tag:
+            total += 1
+            if real not in incorrectTags:
+                incorrectTags[real] = 0
+            incorrectTags[real] += 1
+        
+        print str(i)+".  Value: "+real+"   Guessed: "+tag
+        
+        i += 0
+    
+    print
+    print '----------------------------------------'
+    print
+    print ' Location error:   '
+    print
+    for t in totalTags:
+        if t not in incorrectTags:
+            print t+':   \t'+str(0)
+        else:
+            print t+':   \t'+str(float(incorrectTags[t])/len(totalTags[t]))
+    print
+    print '----------------------------------------'
+    print
+    print ' Total Error:  '+str(float(total)/len(dataset))
+    print 
 dataPoints = loadTrainingData()
 
-node = Node(None, None, dataPoints)
-print node.locSums
-print node.entropy
+tree = buildTree(dataPoints)
 
-splits = getSplits(getAttributeLists(dataPoints))
-
-split = getBestSplit(node, splits, node.entropy)
-print split
+classifyDataSet(tree, dataPoints)
