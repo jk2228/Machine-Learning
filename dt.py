@@ -1,6 +1,7 @@
 import math
 from operator import itemgetter
 import sys
+import random
 
 
 class DataPoint:
@@ -34,8 +35,8 @@ class Node:
 
 #Load training data
 
-def loadTrainingData():
-    f = open('wifi.train', 'ru')
+def loadData(filename):
+    f = open(filename, 'ru')
     
     #used to remove duplicates
     duplicateSet = {}
@@ -210,7 +211,7 @@ def classifyDataSet(tree, dataset):
                 incorrectTags[real] = 0
             incorrectTags[real] += 1
         
-        print str(i)+".  Value: "+real+"   Guessed: "+tag
+        #print str(i)+".  Value: "+real+"   Guessed: "+tag
         
         i += 0
     
@@ -223,14 +224,90 @@ def classifyDataSet(tree, dataset):
         if t not in incorrectTags:
             print t+':   \t'+str(0)
         else:
-            print t+':   \t'+str(float(incorrectTags[t])/len(totalTags[t]))
+            print t+':   \t'+str(float(incorrectTags[t])/totalTags[t])
     print
     print '----------------------------------------'
     print
     print ' Total Error:  '+str(float(total)/len(dataset))
     print 
-dataPoints = loadTrainingData()
+    
+def pruneToDepth(tree, depth):
+    if depth == 0:
+        allLabelFreqs = {}
+        for p in tree.dataPoints:
+            if p.location not in allLabelFreqs:
+                allLabelFreqs[p.location] = 0
+            allLabelFreqs[p.location] += 1
+        bestLabel = None
+        highFreq = 0
+        for l in allLabelFreqs:
+            if allLabelFreqs[l] > highFreq:
+                highFreq = allLabelFreqs[l]
+                bestLabel = l
+        tree.label = bestLabel
+        tree.left = None
+        tree.right = None
+        return tree
+    tree.left = pruneToDepth(tree.left, depth - 1)
+    tree.right = pruneToDepth(tree.right, depth - 1)
+    return tree
+    
+def genKSplits(dataset, k):
+    splitSize = math.ceil(float(len(dataset))/k)
+    
+    splits = {}
+    
+    tot = len(dataset)
+    curSplit = 0
+    for i in range(0, tot):
+        curSplit = math.floor(float(i)/splitSize)
+        randomInd = random.randint(0, len(dataset)-1)
+        randomP = dataset[randomInd]
+        
+        if curSplit not in splits:
+            splits[curSplit] = []
+        splits[curSplit].append(randomP)
+        del dataset[randomInd]
+    return splits.values()
+    
+dataPoints = loadData('wifi.train')
+testData = loadData('wifi.test')
 
 tree = buildTree(dataPoints)
 
+print
+print
+print "|||||||  Full Tree -- Training  |||||||"
 classifyDataSet(tree, dataPoints)
+print
+print
+print "|||||||  Full Tree -- Testing  |||||||"
+classifyDataSet(tree, testData)
+
+prunedTree = buildTree(dataPoints)
+prunedTree = pruneToDepth(prunedTree, 2)
+print
+print
+print "|||||||  Depth-2 Tree -- Training  |||||||"
+classifyDataSet(prunedTree, dataPoints)
+print
+print
+print "|||||||  Depth-2 Tree -- Testing  |||||||"
+classifyDataSet(prunedTree, testData)
+
+print 
+print "________________________________________________________"
+print
+print " Cross validation"
+print "________________________________________________________"
+print
+
+combinedSample = loadData('wifi.train')
+combinedSample.extend(loadData('wifi.test'))
+
+crossValSplits = genKSplits(combinedSample, 10)
+
+for s in crossValSplits:
+    print len(s)
+
+
