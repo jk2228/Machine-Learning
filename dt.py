@@ -189,7 +189,7 @@ def classifyPoint(tree, point):
     else:
         return classifyPoint(tree.left, point)
         
-def classifyDataSet(tree, dataset):
+def classifyDataSet(tree, dataset, out=True):
     total = 0
     incorrectTags = {}
     totalTags = {}
@@ -215,6 +215,9 @@ def classifyDataSet(tree, dataset):
         
         i += 0
     
+    if not out:
+        return float(total)/len(dataset)
+    
     print
     print '----------------------------------------'
     print
@@ -228,8 +231,60 @@ def classifyDataSet(tree, dataset):
     print
     print '----------------------------------------'
     print
+    print ' Number Misclassified: '+str(total)
+    print ' Total data points:    '+str(len(dataset))
     print ' Total Error:  '+str(float(total)/len(dataset))
     print 
+    
+    return float(total)/len(dataset)
+    
+def compareAlgorithms(tree1, tree2, dataset):
+    total = 0
+    incorrectPointsA1 = []
+    correctPointsA1 = []
+    incorrectPointsA2 = []
+    correctPointsA2 = []
+    
+    for p in dataset:
+        real = p.location
+        tag1 = classifyPoint(tree1, p)
+        tag2 = classifyPoint(tree2, p)
+        
+        if tag1 != real:
+            incorrectPointsA1.append(p)
+        else:
+            correctPointsA1.append(p)
+            
+        if tag2 != real:
+            incorrectPointsA2.append(p)
+        else:
+            correctPointsA2.append(p)
+        
+    bothCorrect = 0
+    A1notA2 = 0
+    A2notA1 = 0
+    bothIncorrect = 0
+        
+    for p1 in correctPointsA1:
+        if p1 in correctPointsA2:
+            bothCorrect+=1
+        else:
+            A1notA2 += 1
+    for p2 in correctPointsA2:
+        if p2 not in correctPointsA1:
+            A2notA1 += 1
+    for p1 in incorrectPointsA1:
+        if p1 in incorrectPointsA2:
+            bothIncorrect += 1
+            
+    print 
+    print 
+    print '----------------------------------'
+    print 
+    print 'Correct by both:    '+str(bothCorrect)
+    print 'Correct by Tree1:   '+str(A1notA2)
+    print 'Correct by Tree2:   '+str(A2notA1)
+    print 'Correct by neither: '+str(bothIncorrect)
     
 def pruneToDepth(tree, depth):
     if depth == 0:
@@ -295,6 +350,8 @@ print
 print "|||||||  Depth-2 Tree -- Testing  |||||||"
 classifyDataSet(prunedTree, testData)
 
+compareAlgorithms(tree, prunedTree, testData)
+
 print 
 print "________________________________________________________"
 print
@@ -302,12 +359,27 @@ print " Cross validation"
 print "________________________________________________________"
 print
 
-combinedSample = loadData('wifi.train')
-combinedSample.extend(loadData('wifi.test'))
+quit()
 
-crossValSplits = genKSplits(combinedSample, 10)
+combinedSample = loadData('wifi.crossval')
 
-for s in crossValSplits:
-    print len(s)
+k = 10
 
+crossValSplits = genKSplits(combinedSample, k)
 
+for i in range(0, k):
+    testset = []
+    trainingset = []
+    
+    for j in range(0, k):
+        if j == i:
+            testset.extend(crossValSplits[j])
+        else:
+            trainingset.extend(crossValSplits[j])
+    
+    tree = buildTree(trainingset)
+    prunedtree = pruneToDepth(buildTree(trainingset), 2)
+    
+    print 'Split '+i
+    print 'full tree:  '+str(classifyDataSet(tree, testset, out=False))
+    print 'depth 2:    '+str(classifyDataSet(prunedtree, testset, out=False))
