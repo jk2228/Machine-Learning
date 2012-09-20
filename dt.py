@@ -161,6 +161,20 @@ def getBestSplit(node, splits=None):
         print best_splitNode.dataPoints
     return best_splitNode
     
+def getMajorityNode(dataPoints):
+    allLabelFreqs = {}
+    for p in dataPoints:
+        if p.location not in allLabelFreqs:
+            allLabelFreqs[p.location] = 0
+        allLabelFreqs[p.location] += 1
+    bestLabel = None
+    highFreq = 0
+    for l in allLabelFreqs:
+        if allLabelFreqs[l] > highFreq:
+            highFreq = allLabelFreqs[l]
+            bestLabel = l
+    tree = Node(None, None, dataPoints, label=bestLabel)
+    return tree
     
 ''' Actually build the tree '''
 def buildTree(dataPoints):
@@ -175,6 +189,10 @@ def buildTree(dataPoints):
     
     rootNode = Node(None, None, dataPoints)
     rootNode = getBestSplit(rootNode)
+    
+    if len(rootNode.left.dataPoints) == 0 or len(rootNode.right.dataPoints) == 0:
+        return getMajorityNode(rootNode.dataPoints)
+    
     rootNode.left = buildTree(rootNode.left.dataPoints)
     rootNode.right = buildTree(rootNode.right.dataPoints)
 
@@ -380,6 +398,6 @@ for i in range(0, k):
     tree = buildTree(trainingset)
     prunedtree = pruneToDepth(buildTree(trainingset), 2)
     
-    print 'Split '+i
+    print 'Split '+str(i)
     print 'full tree:  '+str(classifyDataSet(tree, testset, out=False))
     print 'depth 2:    '+str(classifyDataSet(prunedtree, testset, out=False))
