@@ -455,6 +455,7 @@ if False:
         print 'Split '+str(i)
         print 'full tree:  '+str(classifyDataSet(tree, testset, out=False))
         print 'depth 2:    '+str(classifyDataSet(prunedtree, testset, out=False))
+        compareAlgorithms(tree, prunedtree, testset)
 
 print 
 print "________________________________________________________"
@@ -502,63 +503,63 @@ if False:
             
             print " Val ratio: "+str(vRatio)+" |     Optimal Depth: "+str(tree.getDepth())+"  Val Error: "+str(classifyDataSet(tree, validationset, out=False))+" Test Error: "+str(classifyDataSet(tree, testset, out=False))
             
+if False:            
+    trainData = loadData('wifi.train')
+    test_data = loadData('wifi.test')
+    validate_error = {}
+    test_error = {}
+    
+    #Repeat for (ratio) in [0.1:0.9]
+    for vv in range(1, 10):
+        print " ----  Ratio "+str(float(vv)/10)
+        
+        vRatio = float(vv)/10
+        validate_error[vRatio] = []
+        test_error[vRatio] = []
+        
+    #~~ Repeat 10 times:
+        for cr in range(0, 10):
             
-trainData = loadData('wifi.train')
-test_data = loadData('wifi.test')
-validate_error = {}
-test_error = {}
-
-#Repeat for (ratio) in [0.1:0.9]
-for vv in range(1, 10):
-    print " ----  Ratio "+str(float(vv)/10)
+    #~~~~~~~0. Shuffle training set
+            random.shuffle(trainData)
     
-    vRatio = float(vv)/10
-    validate_error[vRatio] = []
-    test_error[vRatio] = []
+    #~~~~~~~1. Split your training set into (new_train) and (validate) using that (ratio) 
+            new_train = []
+            validate = []
+            for i, p in enumerate(trainData):
+                if i > (vRatio * len(trainData)):
+                    new_train.append(p)
+                else:
+                    validate.append(p)
+            
+    #~~~~~~~ 2. Train your tree on (new_train)
+    #~~~~~~~3. Until (validate_error) is the smallest (iterate through multiple tree depths)
+            bestTree = findOptimalDepthTree(new_train, validate)
     
-#~~ Repeat 10 times:
-    for cr in range(0, 10):
-        
-#~~~~~~~0. Shuffle training set
-        random.shuffle(trainData)
-
-#~~~~~~~1. Split your training set into (new_train) and (validate) using that (ratio) 
-        new_train = []
-        validate = []
-        for i, p in enumerate(trainData):
-            if i > (vRatio * len(trainData)):
-                new_train.append(p)
-            else:
-                validate.append(p)
-        
-#~~~~~~~ 2. Train your tree on (new_train)
-#~~~~~~~3. Until (validate_error) is the smallest (iterate through multiple tree depths)
-        bestTree = findOptimalDepthTree(new_train, validate)
-
-#~~~~~~~ 4. Record lowest validation error: validate_error[ratio].append(lowest_validate_error)
-        er = classifyDataSet(bestTree, validate, out=False)
-        print "  Validate Error:  "+str(er)
-        validate_error[vRatio].append(er)
-
-#~~~~~~~ 5. Test tree with the lowest validation error on (test_set), record it: test_error[ratio].append(test_error)
-        er = classifyDataSet(bestTree, test_data, out=False)
-        print "  Test Error    :  "+str(er)
-        test_error[vRatio].append(er)
-        
-print "validate_error"
-print ",1,2,3,4,5,6,7,8,9,10"
-for ratio in validate_error:
-    sys.stdout.write(str(ratio))
-    for err in validate_error[ratio]:
-        sys.stdout.write(','+str(err));
-    sys.stdout.write('\n')
+    #~~~~~~~ 4. Record lowest validation error: validate_error[ratio].append(lowest_validate_error)
+            er = classifyDataSet(bestTree, validate, out=False)
+            print "  Validate Error:  "+str(er)
+            validate_error[vRatio].append(er)
     
-print "test_error"
-print ",1,2,3,4,5,6,7,8,9,10"
-for ratio in test_error:
-    sys.stdout.write(str(ratio))
-    for err in test_error[ratio]:
-        sys.stdout.write(','+str(err));
-    sys.stdout.write('\n')
-
-print 
+    #~~~~~~~ 5. Test tree with the lowest validation error on (test_set), record it: test_error[ratio].append(test_error)
+            er = classifyDataSet(bestTree, test_data, out=False)
+            print "  Test Error    :  "+str(er)
+            test_error[vRatio].append(er)
+            
+    print "validate_error"
+    print ",1,2,3,4,5,6,7,8,9,10"
+    for ratio in validate_error:
+        sys.stdout.write(str(ratio))
+        for err in validate_error[ratio]:
+            sys.stdout.write(','+str(err));
+        sys.stdout.write('\n')
+        
+    print "test_error"
+    print ",1,2,3,4,5,6,7,8,9,10"
+    for ratio in test_error:
+        sys.stdout.write(str(ratio))
+        for err in test_error[ratio]:
+            sys.stdout.write(','+str(err));
+        sys.stdout.write('\n')
+    
+    print 
