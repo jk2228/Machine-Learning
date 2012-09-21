@@ -32,6 +32,13 @@ class Node:
         self.entropy = getEntropy(locSums.values())
     def __repr__(self):
         return "Attribute: "+str(self.attr)+", Value: "+str(self.value)+" Entropy: "+str(self.entropy)
+        
+    def getDepth(self):
+        if self.left == None && self.right == None:
+            return 0
+        v1 = self.left.getDepth()
+        v2 = self.right.getDepth()
+        return math.max(v1, v2)
 
 #Load training data
 
@@ -317,13 +324,12 @@ def pruneToDepth(tree, depth):
             if allLabelFreqs[l] > highFreq:
                 highFreq = allLabelFreqs[l]
                 bestLabel = l
-        tree.label = bestLabel
-        tree.left = None
-        tree.right = None
-        return tree
-    tree.left = pruneToDepth(tree.left, depth - 1)
-    tree.right = pruneToDepth(tree.right, depth - 1)
-    return tree
+        newTree = Node(None, None, tree.dataPoints, label=bestLabel)
+        return newTree
+    newTree = Node(None, None, tree.dataPoints, attr=tree.attr, value=tree.value)
+    newTree.left = pruneToDepth(tree.left, depth - 1)
+    newTree.right = pruneToDepth(tree.right, depth - 1)
+    return newTree
     
 def genKSplits(dataset, k):
     splitSize = math.ceil(float(len(dataset))/k)
@@ -342,6 +348,13 @@ def genKSplits(dataset, k):
         splits[curSplit].append(randomP)
         del dataset[randomInd]
     return splits.values()
+    
+def findOptimalDepthTree(training, validation):
+    mainTree = buildTree(training)
+    
+    for i in range(0, mainTree.getDepth()):
+        
+    
     
 dataPoints = loadData('wifi.train')
 testData = loadData('wifi.test')
@@ -375,29 +388,73 @@ print "________________________________________________________"
 print
 print " Cross validation"
 print "________________________________________________________"
+print 
+
+if False:
+    combinedSample = loadData('wifi.crossval')
+    
+    k = 10  #
+    
+    crossValSplits = genKSplits(combinedSample, k)
+    
+    for i in range(0, k):
+        testset = []
+        trainingset = []
+        
+        for j in range(0, k):
+            if j == i:
+                testset.extend(crossValSplits[j])
+            else:
+                trainingset.extend(crossValSplits[j])
+        
+        tree = buildTree(trainingset)
+        prunedtree = pruneToDepth(buildTree(trainingset), 2)
+        
+        print 'Split '+str(i)
+        print 'full tree:  '+str(classifyDataSet(tree, testset, out=False))
+        print 'depth 2:    '+str(classifyDataSet(prunedtree, testset, out=False))
+
+print 
+print "________________________________________________________"
+print
+print " Validation Set Testing"
+print "________________________________________________________"
 print
 
-quit()
-
-combinedSample = loadData('wifi.crossval')
-
-k = 10
-
-crossValSplits = genKSplits(combinedSample, k)
-
-for i in range(0, k):
-    testset = []
-    trainingset = []
+if True:
+    combinedSample = loadData('wifi.crossval')
     
-    for j in range(0, k):
-        if j == i:
-            testset.extend(crossValSplits[j])
-        else:
-            trainingset.extend(crossValSplits[j])
-    
-    tree = buildTree(trainingset)
-    prunedtree = pruneToDepth(buildTree(trainingset), 2)
-    
-    print 'Split '+str(i)
-    print 'full tree:  '+str(classifyDataSet(tree, testset, out=False))
-    print 'depth 2:    '+str(classifyDataSet(prunedtree, testset, out=False))
+    k = 10
+    crossValSplits = genKSplits(combinedSample, k)
+
+    # Do 10-fold cross val
+    for i in range(0, k):
+        testset = []
+        trainingset = []
+        
+        for j in range(0, k):
+            if j == i:
+                testset.extend(crossValSplits[j])
+            else:
+                trainingset.extend(crossValSplits[j])
+        
+        #Divide up validation sets
+        for vv in range(1, 10):
+            vRatio = float(vv)/10
+            finaltrainset = []
+            validationset = []
+            
+            j = 0
+            for p in trainingset:
+                if j > (vRatio * len(trainingset)):
+                    finaltrainset.append(p)
+                else:
+                    validationset.append(p)
+                    
+                j += 1
+                
+            tree = findOptimalDepthTree(finaltrainset, validationset)
+            
+            print "For cv: "+i+"  val ratio: "+vRatio+" -- Optimal Depth: "+tree.getDepth()+
+                "  Val Error: "+classifyDataSet(tree, validationset, out=False)+" Test Error: "+classifyDataSet(tree, testset, out=False)
+                
