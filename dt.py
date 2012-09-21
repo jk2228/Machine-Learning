@@ -34,11 +34,11 @@ class Node:
         return "Attribute: "+str(self.attr)+", Value: "+str(self.value)+" Entropy: "+str(self.entropy)
         
     def getDepth(self):
-        if self.left == None && self.right == None:
+        if self.left == None and self.right == None:
             return 0
         v1 = self.left.getDepth()
         v2 = self.right.getDepth()
-        return math.max(v1, v2)
+        return max(v1, v2)+1
 
 #Load training data
 
@@ -111,6 +111,27 @@ def getAttributeLists(dataList):
 
     return splitsForAttributes
 
+def findBoundSplits(value, splitList):
+    startIndex = -1
+    endIndex = -1
+    started = False
+    i = 0
+    for pair in splitList:
+        val, loc = pair
+        if val == value:
+            started = True
+            if startIndex == -1:
+                startIndex = i
+        else:
+            if started:
+                endIndex = i
+                started = False
+        i += 1
+        
+    v1 , _ = splitList[startIndex]
+    v2 , _ = splitList[endIndex]
+    return (v1, v2)
+    
 def getSplits(attributeLists):
     splits = {}
     
@@ -122,7 +143,12 @@ def getSplits(attributeLists):
             value, loc = pair
             pValue, pLoc = prev
             if loc != pLoc:
+                if value == pValue:
+                    startSplit, endSplit = findBoundSplits(value, attributeLists[attr])
+                    splitList.append(startSplit)
+                    splitList.append(endSplit)
                 splitList.append((value + pValue) / float(2))
+                    
             prev = pair
         splits[attr] = sorted(list(set(splitList)))
 
@@ -146,9 +172,13 @@ def getChildrenEntropy(rootNode):
     
     return r + l
 
-def getBestSplit(node, splits=None):
+def getBestSplit(node, splits=None, out=False):
     if splits == None:
         splits = getSplits(getAttributeLists(node.dataPoints))
+    if out:
+        print ' ------------------- '
+        print splits
+    
     best_infoGain = -1 * sys.maxint
     best_splitNode = None
     previousInfo = node.entropy
@@ -163,9 +193,11 @@ def getBestSplit(node, splits=None):
                 best_infoGain = (previousInfo - info)
                 best_splitNode = testSplit
                 #print str(info - previousInfo) + "     " + str(testSplit)
+                
     if best_splitNode.left.dataPoints == [] or best_splitNode.right.dataPoints == []:
         print "0 size"
         print best_splitNode.dataPoints
+        if not out: getBestSplit(node, out=True)
     return best_splitNode
     
 def getMajorityNode(dataPoints):
@@ -312,6 +344,8 @@ def compareAlgorithms(tree1, tree2, dataset):
     print 'Correct by neither: '+str(bothIncorrect)
     
 def pruneToDepth(tree, depth):
+    if tree == None:
+        return None
     if depth == 0:
         allLabelFreqs = {}
         for p in tree.dataPoints:
@@ -324,9 +358,9 @@ def pruneToDepth(tree, depth):
             if allLabelFreqs[l] > highFreq:
                 highFreq = allLabelFreqs[l]
                 bestLabel = l
-        newTree = Node(None, None, tree.dataPoints, label=bestLabel)
+        newTree = Node(None, None, tree.dataPoints, attr=tree.attr, value=tree.value, label=bestLabel)
         return newTree
-    newTree = Node(None, None, tree.dataPoints, attr=tree.attr, value=tree.value)
+    newTree = Node(None, None, tree.dataPoints, attr=tree.attr, value=tree.value, label=tree.label)
     newTree.left = pruneToDepth(tree.left, depth - 1)
     newTree.right = pruneToDepth(tree.right, depth - 1)
     return newTree
@@ -354,7 +388,6 @@ def findOptimalDepthTree(training, validation):
     
     besterror = sys.maxint
     bestdepth = -1
-    
     for i in range(0, mainTree.getDepth()):
         newTree = pruneToDepth(mainTree, i)
         error = classifyDataSet(newTree, validation, out=False)
@@ -363,7 +396,7 @@ def findOptimalDepthTree(training, validation):
             bestdepth = i
             besterror = error
     
-    return pruneToDepth(mainTree, bestDepth)
+    return pruneToDepth(mainTree, bestdepth)
     
 dataPoints = loadData('wifi.train')
 testData = loadData('wifi.test')
@@ -453,6 +486,8 @@ if True:
             finaltrainset = []
             validationset = []
             
+            random.shuffle(trainingset)
+            
             j = 0
             for p in trainingset:
                 if j > (vRatio * len(trainingset)):
@@ -464,6 +499,5 @@ if True:
                 
             tree = findOptimalDepthTree(finaltrainset, validationset)
             
-            print "For cv: "+i+"  val ratio: "+vRatio+" -- Optimal Depth: "+tree.getDepth()+
-                "  Val Error: "+classifyDataSet(tree, validationset, out=False)+" Test Error: "+classifyDataSet(tree, testset, out=False)
+            print "For cv: "+str(i)+"  val ratio: "+str(vRatio)+" -- Optimal Depth: "+str(tree.getDepth())+"  Val Error: "+str(classifyDataSet(tree, validationset, out=False))+" Test Error: "+str(classifyDataSet(tree, testset, out=False))
                 
