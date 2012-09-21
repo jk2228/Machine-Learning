@@ -463,7 +463,7 @@ print " Validation Set Testing"
 print "________________________________________________________"
 print
 
-if True:
+if False:
     combinedSample = loadData('wifi.crossval')
     
     k = 10
@@ -471,7 +471,7 @@ if True:
 
     # Do 10-fold cross val
     for i in range(0, k):
-        print " ----- Cross Fold [ "+str(i)+' ] -------"
+        print " ----- Cross Fold [ "+str(i)+" ] -------"
         testset = []
         trainingset = []
         
@@ -510,6 +510,8 @@ test_error = {}
 
 #Repeat for (ratio) in [0.1:0.9]
 for vv in range(1, 10):
+    print " ----  Ratio "+str(float(vv)/10)
+    
     vRatio = float(vv)/10
     validate_error[vRatio] = []
     test_error[vRatio] = []
@@ -534,10 +536,29 @@ for vv in range(1, 10):
         bestTree = findOptimalDepthTree(new_train, validate)
 
 #~~~~~~~ 4. Record lowest validation error: validate_error[ratio].append(lowest_validate_error)
-        validate_error[vRatio].append(classifyDataSet(bestTree, validate, out=False))
+        er = classifyDataSet(bestTree, validate, out=False)
+        print "  Validate Error:  "+str(er)
+        validate_error[vRatio].append(er)
 
 #~~~~~~~ 5. Test tree with the lowest validation error on (test_set), record it: test_error[ratio].append(test_error)
-        test_error[vRatio].append(classifyDataSet(bestTree, test_data, out=False))
+        er = classifyDataSet(bestTree, test_data, out=False)
+        print "  Test Error    :  "+str(er)
+        test_error[vRatio].append(er)
         
-print validate_error
-print test_error
+print "validate_error"
+print ",1,2,3,4,5,6,7,8,9,10"
+for ratio in validate_error:
+    sys.stdout.write(str(ratio))
+    for err in validate_error[ratio]:
+        sys.stdout.write(','+str(err));
+    sys.stdout.write('\n')
+    
+print "test_error"
+print ",1,2,3,4,5,6,7,8,9,10"
+for ratio in test_error:
+    sys.stdout.write(str(ratio))
+    for err in test_error[ratio]:
+        sys.stdout.write(','+str(err));
+    sys.stdout.write('\n')
+
+print 
