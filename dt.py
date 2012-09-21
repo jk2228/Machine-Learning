@@ -471,6 +471,7 @@ if True:
 
     # Do 10-fold cross val
     for i in range(0, k):
+        print " ----- Cross Fold [ "+str(i)+' ] -------"
         testset = []
         trainingset = []
         
@@ -499,5 +500,44 @@ if True:
                 
             tree = findOptimalDepthTree(finaltrainset, validationset)
             
-            print "For cv: "+str(i)+"  val ratio: "+str(vRatio)+" -- Optimal Depth: "+str(tree.getDepth())+"  Val Error: "+str(classifyDataSet(tree, validationset, out=False))+" Test Error: "+str(classifyDataSet(tree, testset, out=False))
-                
+            print " Val ratio: "+str(vRatio)+" |     Optimal Depth: "+str(tree.getDepth())+"  Val Error: "+str(classifyDataSet(tree, validationset, out=False))+" Test Error: "+str(classifyDataSet(tree, testset, out=False))
+            
+            
+trainData = loadData('wifi.train')
+test_data = loadData('wifi.test')
+validate_error = {}
+test_error = {}
+
+#Repeat for (ratio) in [0.1:0.9]
+for vv in range(1, 10):
+    vRatio = float(vv)/10
+    validate_error[vRatio] = []
+    test_error[vRatio] = []
+    
+#~~ Repeat 10 times:
+    for cr in range(0, 10):
+        
+#~~~~~~~0. Shuffle training set
+        random.shuffle(trainData)
+
+#~~~~~~~1. Split your training set into (new_train) and (validate) using that (ratio) 
+        new_train = []
+        validate = []
+        for i, p in enumerate(trainData):
+            if i > (vRatio * len(trainData)):
+                new_train.append(p)
+            else:
+                validate.append(p)
+        
+#~~~~~~~ 2. Train your tree on (new_train)
+#~~~~~~~3. Until (validate_error) is the smallest (iterate through multiple tree depths)
+        bestTree = findOptimalDepthTree(new_train, validate)
+
+#~~~~~~~ 4. Record lowest validation error: validate_error[ratio].append(lowest_validate_error)
+        validate_error[vRatio].append(classifyDataSet(bestTree, validate, out=False))
+
+#~~~~~~~ 5. Test tree with the lowest validation error on (test_set), record it: test_error[ratio].append(test_error)
+        test_error[vRatio].append(classifyDataSet(bestTree, test_data, out=False))
+        
+print validate_error
+print test_error
