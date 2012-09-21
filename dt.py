@@ -352,9 +352,18 @@ def genKSplits(dataset, k):
 def findOptimalDepthTree(training, validation):
     mainTree = buildTree(training)
     
-    for i in range(0, mainTree.getDepth()):
-        
+    besterror = sys.maxint
+    bestdepth = -1
     
+    for i in range(0, mainTree.getDepth()):
+        newTree = pruneToDepth(mainTree, i)
+        error = classifyDataSet(newTree, validation, out=False)
+        
+        if error < besterror:
+            bestdepth = i
+            besterror = error
+    
+    return pruneToDepth(mainTree, bestDepth)
     
 dataPoints = loadData('wifi.train')
 testData = loadData('wifi.test')
