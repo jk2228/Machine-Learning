@@ -1,0 +1,128 @@
+
+
+|||||||  Full Tree -- Training  |||||||
+
+----------------------------------------
+
+ Location error:   
+
+HALLWAY:   	0
+MATTINS:   	0
+LOUNGE:   	0
+PHILLIPS:   	0
+ATRIUM_2:   	0
+ATRIUM_1:   	0
+
+----------------------------------------
+
+ Number Misclassified: 0
+ Total data points:    231
+ Total Error:  0.0
+
+
+
+|||||||  Full Tree -- Testing  |||||||
+
+----------------------------------------
+
+ Location error:   
+
+HALLWAY:   	0.35
+MATTINS:   	0.25
+LOUNGE:   	0.275
+PHILLIPS:   	0.125
+ATRIUM_2:   	0.384615384615
+ATRIUM_1:   	0.375
+
+----------------------------------------
+
+ Number Misclassified: 70
+ Total data points:    239
+ Total Error:  0.292887029289
+
+
+
+|||||||  Depth-2 Tree -- Training  |||||||
+
+----------------------------------------
+
+ Location error:   
+
+HALLWAY:   	1.0
+MATTINS:   	0.131578947368
+LOUNGE:   	0.105263157895
+PHILLIPS:   	0.05
+ATRIUM_2:   	1.0
+ATRIUM_1:   	0.589743589744
+
+----------------------------------------
+
+ Number Misclassified: 110
+ Total data points:    231
+ Total Error:  0.47619047619
+
+
+
+|||||||  Depth-2 Tree -- Testing  |||||||
+
+----------------------------------------
+
+ Location error:   
+
+HALLWAY:   	1.0
+MATTINS:   	0.125
+LOUNGE:   	0
+PHILLIPS:   	0
+ATRIUM_2:   	1.0
+ATRIUM_1:   	0.6
+
+----------------------------------------
+
+ Number Misclassified: 108
+ Total data points:    239
+ Total Error:  0.451882845188
+
+
+
+----------------------------------
+
+Correct by both:    103
+Correct by Tree1:   66
+Correct by Tree2:   28
+Correct by neither: 42
+
+________________________________________________________
+
+ Cross validation
+________________________________________________________
+
+Split 0
+full tree:  0.234042553191
+depth 2:    0.446808510638
+Split 1
+full tree:  0.297872340426
+depth 2:    0.404255319149
+Split 2
+full tree:  0.404255319149
+depth 2:    0.489361702128
+Split 3
+full tree:  0.36170212766
+depth 2:    0.617021276596
+Split 4
+full tree:  0.212765957447
+depth 2:    0.574468085106
+Split 5
+full tree:  0.297872340426
+depth 2:    0.468085106383
+Split 6
+full tree:  0.297872340426
+depth 2:    0.489361702128
+Split 7
+full tree:  0.255319148936
+depth 2:    0.510638297872
+Split 8
+full tree:  0.297872340426
+depth 2:    0.446808510638
+Split 9
+full tree:  0.230769230769
+depth 2:    0.333333333333
